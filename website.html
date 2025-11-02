@@ -506,6 +506,9 @@
                                 <label class="text-lg font-semibold mb-2">Output</label>
                                 <div class="led led-single" id="gate-led-out" data-value="0">0</div>
                             </div>
+
+                            <!-- New Gemini Button -->
+                            <button id="btn-explain-gate" class="gemini-btn mt-6">✨ Explain this Gate</button>
                         </div>
 
                         <!-- Truth Table -->
@@ -641,6 +644,13 @@
                         </div>
                         <div class="flex gap-4 mb-6">
                             <button id="btn-analyze-expr" class="flex-1 p-3 gemini-btn" disabled>✨ Analyze Expression</button>
+                        </div>
+
+                        <!-- New Feature: Generate from Description -->
+                        <div class="mt-8 pt-6 border-t border-gray-700">
+                            <label for="logic-problem" class="block text-sm font-medium text-gray-300 mb-1">...or Generate from Description</label>
+                            <textarea id="logic-problem" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono" placeholder="e.g., A light turns on if switch A is on and switch B is off..."></textarea>
+                            <button id="btn-generate-expr" class="w-full mt-2 p-3 gemini-btn">✨ Generate Expression</button>
                         </div>
                     </div>
 
@@ -1798,6 +1808,10 @@ SOFTWARE.
             const btnExplainArith = document.getElementById('btn-explain-arith-trace');
             const btnExplainAlu = document.getElementById('btn-explain-alu-trace');
             const btnAnalyzeExpr = document.getElementById('btn-analyze-expr');
+            // New Gemini Buttons
+            const btnExplainGate = document.getElementById('btn-explain-gate');
+            const btnGenerateExpr = document.getElementById('btn-generate-expr');
+            const logicProblem = document.getElementById('logic-problem');
 
             // --- Initial Display Setup ---
             function initializeDisplays() {
@@ -2248,6 +2262,42 @@ SOFTWARE.
                 showGeminiModal("Expression Analysis", markdownToHtml(response));
             });
 
+            // New: Explain Gate
+            btnExplainGate.addEventListener('click', async () => {
+                const gateName = document.getElementById('gate-select').value;
+
+                showGeminiLoading();
+                const systemPrompt = "You are a friendly computer science tutor. Explain a logic gate to a beginner. Keep it concise (2-3 paragraphs). Include a simple real-world analogy. Start with a simple definition.";
+                const userQuery = `Please explain the ${gateName} logic gate. What is it, how does it work, and what is a real-world analogy for it?`;
+
+                const response = await callGeminiAPI(userQuery, systemPrompt);
+                showGeminiModal(`${gateName} Gate Explained`, markdownToHtml(response));
+            });
+
+            // New: Generate Expression from Description
+            btnGenerateExpr.addEventListener('click', async () => {
+                const problemDescription = logicProblem.value;
+                if (!problemDescription) return;
+
+                showGeminiLoading();
+                const systemPrompt = "You are a logic design assistant. Convert the following natural language problem into a Boolean expression using variables (like A, B, C) and operators AND, OR, NOT, XOR, and parentheses. Respond *only* with the simplified Boolean expression. Do not add any other text, explanation, or markdown. For example, if the user says 'A or B', respond 'A OR B'.";
+                const userQuery = `Problem: ${problemDescription}`;
+
+                const response = await callGeminiAPI(userQuery, systemPrompt);
+
+                // Clean up response - remove potential markdown backticks or newlines
+                const expression = response.trim().replace(/`/g, '').replace(/<br>/g, '');
+
+                // Populate the input field
+                document.getElementById('logic-expr').value = expression;
+
+                // Hide the loading modal
+                hideModal('gemini-modal');
+
+                // Automatically generate the truth table for the new expression
+                document.getElementById('btn-truth-table').click();
+            });
+
 
             // --- Initial Run ---
             initializeDisplays();
@@ -2257,4 +2307,3 @@ SOFTWARE.
     </script>
 </body>
 </html>
-
