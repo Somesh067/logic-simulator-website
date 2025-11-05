@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Logic Gate Builder</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* --- Styles copied from index.html for theme consistency --- */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            overflow: hidden; /* Prevent scrolling on this page */
+        }
+
+        /* General Button Style (Purple) */
+        .sim-button {
+            background-color: #6d28d9; /* Violet-700 */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+        .sim-button:hover {
+            background-color: #7c3aed; /* Violet-600 */
+        }
+        .sim-button:active {
+            transform: scale(0.95);
+            background-color: #5b21b6; /* Violet-800 */
+        }
+        .sim-button:disabled {
+            background-color: #374151; /* Gray-700 */
+            color: #6b7280; /* Gray-500 */
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        /* Gray Button Style */
+        .sim-button-gray {
+            background-color: #374151; /* Gray-700 */
+            color: #d1d5db; /* Gray-300 */
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: 2px solid #4b5563;
+            cursor: pointer;
+        }
+        .sim-button-gray:hover {
+            background-color: #4b5563;
+        }
+        .sim-button-gray:active {
+            transform: scale(0.95);
+        }
+        .sim-button-gray.active {
+            background-color: #4f46e5; /* Indigo-600 */
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        /* Style for library buttons */
+        .lib-gate {
+            background-color: #374151; /* Gray-700 */
+            color: #d1d5db; /* Gray-300 */
+            padding: 0.75rem 0.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: 2px solid #4b5563;
+            cursor: grab;
+        }
+        .lib-gate:hover {
+            background-color: #4b5563;
+        }
+        .lib-gate:active {
+            cursor: grabbing;
+        }
+
+        /* Card style for panels */
+        .card {
+            background-color: #1f2937; /* Gray-800 */
+            border-radius: 8px;
+            border: 1px solid #374151; /* Gray-700 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* --- New Styles for Advanced Builder --- */
+
+        #main-canvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #111827; /* Gray-900 */
+            background-image:
+                    linear-gradient(rgba(55, 65, 81, 0.3) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(55, 65, 81, 0.3) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Draggable Gate */
+        .gate {
+            position: absolute;
+            width: 80px;
+            height: 50px;
+            background-color: #1f2937; /* Gray-800 */
+            border: 2px solid #374151; /* Gray-700 */
+            border-radius: 8px;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .gate:hover, .gate.selected {
+            border-color: #6d28d9; /* Violet-700 */
+            box-shadow: 0 0 10px #6d28d9;
+        }
+
+        .gate-svg {
+            stroke: #9ca3af; /* Gray-400 */
+            stroke-width: 2;
+            fill: none;
+            width: 60%;
+            height: 60%;
+        }
+        .gate-svg path {
+            fill: #1f2937; /* Gray-800 */
+            stroke: #9ca3af;
+        }
+        .gate-svg circle {
+            fill: #1f2937;
+            stroke: #9ca3af;
+        }
+        .gate-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #9ca3af;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Input/Output Pins */
+        .pin {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #4b5563; /* Gray-600 */
+            border-radius: 50%;
+            border: 2px solid #9ca3af;
+            cursor: crosshair;
+            z-index: 10;
+            transition: all 0.2s ease;
+        }
+        .pin:hover {
+            background: #7c3aed; /* Violet-600 */
+        }
+        .pin.active-1 { /* Green glow for pin */
+            background: #10b981;
+            border-color: #34d399;
+            box-shadow: 0 0 8px #10b981;
+        }
+        .pin.active-0 { /* Red glow for pin */
+            background: #dc2626;
+            border-color: #f87171;
+            box-shadow: 0 0 8px #dc2626;
+        }
+        .pin.input { left: -8px; }
+        .pin.output { right: -8px; top: 50%; transform: translateY(-50%); }
+        .pin.input-0 { top: 10px; }
+        .pin.input-1 { top: 28px; }
+        .pin.input-2 { top: 46px; } /* For Full Adder */
+
+        /* Special case for NOT gate (1 input) */
+        .gate[data-type="NOT"] .pin.input-0 { top: 50%; transform: translateY(-50%); }
+        .gate[data-type="NOT"] .pin.input-1 { display: none; }
+        .gate[data-type="BUFFER"] .pin.input-0 { top: 50%; transform: translateY(-50%); }
+        .gate[data-type="BUFFER"] .pin.input-1 { display: none; }
+
+        /* Input/Output sources (e.g., Toggle Switch) */
+        .gate.input-source {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            border-width: 4px;
+        }
+        .gate.input-source[data-value="0"] {
+            background-color: #dc2626; /* Red-600 */
+            border-color: #f87171; /* Red-400 */
+        }
+        .gate.input-source[data-value="1"] {
+            background-color: #16a34a; /* Green-600 */
+            border-color: #4ade80; /* Green-400 */
+        }
+        .gate.output-led {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border-width: 4px;
+        }
+        .gate.output-led[data-value="0"] {
+            background-color: #374151; /* Gray-700 */
+            border-color: #4b5563; /* Gray-600 */
+        }
+        .gate.output-led[data-value="1"] {
+            background-color: #10b981; /* Green-500 */
+            border-color: #34d399; /* Green-400 */
+            box-shadow: 0 0 10px #10b981, 0 0 5px #10b981 inset;
+        }
+
+
+        /* Wires (SVG) */
+        #wire-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Pass clicks through */
+        }
+        .wire {
+            stroke: #dc2626;
+            stroke-width: 3;
+            fill: none !important;      /* <- ADD THIS */
+            stroke-linejoin: round;     /* <- Smooth corners */
+            stroke-linecap: round;      /* <- Rounded ends */
+        }
+
+        .wire.wire-1 {
+            stroke: #10b981; /* Green-500 */
+            /* UPDATED: Increased glow radius */
+            filter: drop-shadow(0 0 8px #10b981); /* Green glow */
+        }
+        .wire-temp {
+            stroke: #6d28d9; /* Violet-700 */
+            stroke-width: 3;
+            stroke-dasharray: 5 5;
+            fill: none;
+        }
+
+        /* Modal for Export */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+    </style>
+    <!-- Added libraries for export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="h-full text-gray-200">
+
+<div class="flex flex-col h-screen">
+
+    <!-- Header / Toolbar -->
+    <header class="flex justify-between items-center p-4 bg-gray-800 border-b border-gray-700 shadow-lg z-20">
+        <h1 class="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-500">
+            Advanced Logic Gate Builder
+        </h1>
+
+        <!-- Toolbar Buttons -->
+        <div class="flex gap-2 sm:gap-4">
+            <button id="btn-wire-mode" class="sim-button-gray flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h18"></path></svg>
+                Wire Mode
+            </button>
+            <button id="btn-clear" class="sim-button-gray">Clear</button>
+            <button id="btn-export" class="sim-button">Export</button>
+            <button id="btn-save" class="sim-button">Save</button>
+        </div>
+
+        <a href="index.html" class="text-sm font-medium text-gray-300 hover:text-cyan-400 transition-colors">
+            &larr; Back to Basic Simulator
+        </a>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- Left Panel: Gate Library -->
+        <aside class="flex-shrink-0 w-48 card m-4 p-4 overflow-y-auto">
+            <h2 class="text-lg font-semibold mb-4 text-cyan-400 text-center">Gate Library</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <button class="lib-gate" data-type="INPUT" draggable="true">Input</button>
+                <button class="lib-gate" data-type="OUTPUT" draggable="true">Output</button>
+                <button class="lib-gate" data-type="AND" draggable="true">AND</button>
+                <button class="lib-gate" data-type="OR" draggable="true">OR</button>
+                <button class="lib-gate" data-type="NOT" draggable="true">NOT</button>
+                <button class="lib-gate" data-type="XOR" draggable="true">XOR</button>
+                <button class="lib-gate" data-type="NAND" draggable="true">NAND</button>
+                <button class="lib-gate" data-type="NOR" draggable="true">NOR</button>
+                <button class="lib-gate" data-type="XNOR" draggable="true">XNOR</button>
+                <button class="lib-gate" data-type="BUFFER" draggable="true">Buffer</button>
+                <button class="lib-gate" data-type="HALF_ADDER" draggable="true">Half Add</button>
+                <button class="lib-gate" data-type="FULL_ADDER" draggable="true">Full Add</button>
+            </div>
+        </aside>
+
+        <!-- Center: Main Canvas -->
+        <main class="flex-1 card m-4">
+            <div id="main-canvas">
+                <!-- Wires will be drawn here -->
+                <svg id="wire-canvas">
+                    <line id="temp-wire" class="wire-temp" x1="0" y1="0" x2="0" y2="0" display="none"/>
+                </svg>
+                <!-- Gates will be added here -->
+            </div>
+        </main>
+
+    </div>
+</div>
+
+<!-- ============================== -->
+<!--       Modal for Export         -->
+<!-- ============================== -->
+<div id="export-modal" class="modal">
+    <div class="card p-8 w-full max-w-md">
+        <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Export Circuit</h2>
+        <p class="text-gray-300 mb-6">How would you like to save your design?</p>
+        <div class="flex flex-col gap-4">
+            <button id="btn-export-png" class="sim-button">Save as Image (.png)</button>
+            <button id="btn-export-pdf" class="sim-button">Save as PDF</button>
+            <button id="btn-export-cancel" class="sim-button-gray mt-4">Cancel</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- STATE ---
+        let gates = {}; // Store all gate objects { id: { type, x, y, value, ... } }
+        let wires = {}; // Store all wire objects { id: { from, to, ... } }
+        let gateCounter = 0;
+        let wireCounter = 0;
+        let isDragging = false;
+        let isWiring = false;
+        let wiringStart = null; // { gateId, pin }
+        let activeDrag = null;  // { id, offsetX, offsetY }
+        let selectedGate = null;
+
+        // --- DOM ELEMENTS ---
+        const canvas = document.getElementById('main-canvas');
+        const wireCanvas = document.getElementById('wire-canvas');
+        let tempWire = document.getElementById('temp-wire'); // Use let
+        const gateLibrary = document.querySelector('.flex-shrink-0');
+        const btnWireMode = document.getElementById('btn-wire-mode');
+        const btnClear = document.getElementById('btn-clear');
+        const btnExport = document.getElementById('btn-export');
+        const exportModal = document.getElementById('export-modal');
+
+        // --- SVG DEFS ---
+        // Simplified SVG paths for gates
+        const gateSVGs = {
+            AND: '<path d="M10 10 V50 H30 A20 20 0 0 0 30 10 Z" />',
+            OR: '<path d="M10 10 Q 25 30 10 50 Q 50 30 10 10 Z" />',
+            XOR: '<path d="M5 10 Q 20 30 5 50 M10 10 Q 25 30 10 50 Q 50 30 10 10 Z" />',
+            NOT: '<path d="M10 15 V45 L40 30 Z" /><circle cx="45" cy="30" r="4"/>',
+            NAND: '<path d="M10 10 V50 H30 A20 20 0 0 0 30 10 Z" /><circle cx="55" cy="30" r="4"/>',
+            NOR: '<path d="M10 10 Q 25 30 10 50 Q 40 30 10 10 Z" /><circle cx="45" cy="30" r="4"/>',
+            XNOR: '<path d="M5 10 Q 20 30 5 50 M10 10 Q 25 30 10 50 Q 40 30 10 10 Z" /><circle cx="45" cy="30" r="4"/>',
+            BUFFER: '<path d="M10 15 V45 L40 30 Z" />',
+            HALF_ADDER: '<text x="10" y="35" fill="#9ca3af" font-size="12">H.A.</text>',
+            FULL_ADDER: '<text x="10" y="35" fill="#9ca3af" font-size="12">F.A.</text>',
+        };
+
+
+        // --- CORE LOGIC ---
+
+        /**
+         * Displays a modal.
+         * @param {string} modalId - The ID of the modal to show.
+         */
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if(modal) modal.classList.add('active');
+        }
+
+        /**
+         * Hides a modal.
+         * @param {string} modalId - The ID of the modal to hide.
+         */
+        function hideModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if(modal) modal.classList.remove('active');
+        }
+
+        /**
+         * Creates a new gate element and adds it to the canvas.
+         * @param {string} type - The gate type (e.g., "AND", "INPUT").
+         * @param {number} x - The initial x coordinate.
+         * @param {number} y - The initial y coordinate.
+         */
+        function createGate(type, x, y) {
+            const id = `gate-${gateCounter++}`;
+            const gateEl = document.createElement('div');
+            gateEl.id = id;
+            gateEl.className = 'gate';
+            gateEl.style.left = `${x}px`;
+            gateEl.style.top = `${y}px`;
+            gateEl.dataset.type = type;
+
+            // Base gate object
+            const gateData = {
+                id,
+                type,
+                x, y,
+                inputs: {},
+                outputs: {},
+                value: 0
+            };
+
+            // ----- SPECIAL GATES -----
+            if (type === 'INPUT') {
+                gateEl.classList.add('input-source');
+                gateEl.dataset.value = 0;
+                gateEl.innerHTML = '0 <div class="pin output" data-pin="out"></div>';
+                gateData.outputs = { out: [] };
+            }
+
+            else if (type === 'OUTPUT') {
+                gateEl.classList.add('output-led');
+                gateEl.dataset.value = 0;
+                gateEl.innerHTML = '<div class="pin input input-0" data-pin="in"></div>';
+                gateData.inputs = { in: null };
+            }
+
+            // ----- LOGIC GATES -----
+            else {
+                const svgHtml = gateSVGs[type] || '';
+                gateEl.innerHTML = `
+            <svg class="gate-svg" viewBox="0 0 60 60">${svgHtml}</svg>
+            <div class="pin output" data-pin="out"></div>
+            <div class="pin input input-0" data-pin="in0"></div>
+            <div class="pin input input-1" data-pin="in1"></div>
+        `;
+
+                // Default: 2-input
+                gateData.inputs = { in0: null, in1: null };
+                gateData.outputs = { out: [] };
+
+                // 1-input gates
+                if (type === 'NOT' || type === 'BUFFER') {
+                    gateData.inputs = { in0: null };
+                }
+
+                // 3-input + 2-output full adder
+                if (type === 'FULL_ADDER') {
+                    gateEl.innerHTML += '<div class="pin input input-2" data-pin="in2"></div>';
+                    gateData.inputs = { in0: null, in1: null, in2: null };
+                    gateData.outputs = { out: [], cout: [] };
+                }
+            }
+
+            // Attach to UI
+            canvas.appendChild(gateEl);
+            gates[id] = gateData;
+            simulate();
+        }
+
+
+        /**
+         * The main simulation loop. Propagates signals.
+         */
+        function simulate() {
+            // This is a simplified, non-recursive propagator.
+            // A real one would use topological sort or event-driven updates.
+
+            // 1. Clear all gate values (except inputs)
+            Object.values(gates).forEach(gate => {
+                if (gate.type !== 'INPUT') gate.value = 0;
+            });
+            Object.values(wires).forEach(wire => wire.value = 0);
+
+            // 2. Propagate from inputs
+            let changed = true;
+            for (let i = 0; i < 20 && changed; i++) { // Limit iterations to prevent infinite loops
+                changed = false;
+
+                Object.values(gates).forEach(gate => {
+                    let oldVal = gate.value;
+
+                    if (gate.type === 'INPUT') {
+                        // Value is set by user
+                    } else {
+                        // Get input values from wires
+                        const in0_wire = wires[gate.inputs.in0];
+                        const in1_wire = wires[gate.inputs.in1];
+                        // const in2_wire = wires[gate.inputs.in2];
+
+                        const in0 = in0_wire ? in0_wire.value : 0;
+                        const in1 = in1_wire ? in1_wire.value : 0;
+                        // const in2 = in2_wire ? in2_wire.value : 0;
+
+                        let newVal = 0;
+                        switch(gate.type) {
+                            case 'OUTPUT': newVal = in0; break;
+                            case 'AND': newVal = in0 & in1; break;
+                            case 'OR':  newVal = in0 | in1; break;
+                            case 'NOT': newVal = in0 ? 0 : 1; break;
+                            case 'XOR': newVal = in0 ^ in1; break;
+                            case 'NAND': newVal = (in0 & in1) ? 0 : 1; break;
+                            case 'NOR': newVal = (in0 | in1) ? 0 : 1; break;
+                            case 'XNOR': newVal = (in0 ^ in1) ? 0 : 1; break;
+                            case 'BUFFER': newVal = in0; break;
+                            // Add adders here...
+                            default: newVal = 0;
+                        }
+                        gate.value = newVal;
+                    }
+
+                    if (gate.value !== oldVal) changed = true;
+
+                    // Propagate value to output wires
+                    Object.keys(gate.outputs).forEach(outputPin => {
+                        gate.outputs[outputPin].forEach(wireId => {
+                            if (wires[wireId]) wires[wireId].value = gate.value;
+                        });
+                    });
+                });
+            }
+
+            // 3. Update Visuals
+            updateVisuals();
+        }
+
+        /**
+         * Updates all visual elements (wires, LEDs) based on state.
+         */
+        function updateVisuals() {
+            // Update Wires
+            Object.values(wires).forEach(wire => {
+                const wireEl = document.getElementById(wire.id);
+                if (wireEl) {
+                    wireEl.classList.toggle('wire-1', wire.value === 1);
+                }
+            });
+
+            // Update Gates (LEDs, Inputs) and Pin Glows
+            Object.values(gates).forEach(gate => {
+                const gateEl = document.getElementById(gate.id);
+                if (!gateEl) return;
+
+                if (gate.type === 'OUTPUT') {
+                    gateEl.dataset.value = gate.value;
+                }
+                if (gate.type === 'INPUT') {
+                    gateEl.dataset.value = gate.value;
+                    gateEl.innerHTML = `${gate.value}<div class="pin output" data-pin="out"></div>`;
+                }
+
+                // Update Pin Glows
+                // Input pins: Glow based on the wire connected to them
+                Object.keys(gate.inputs).forEach(pinId => {
+                    const wireId = gate.inputs[pinId];
+                    const wire = wires[wireId];
+                    const pinValue = wire ? wire.value : 0;
+                    const pinEl = gateEl.querySelector(`.pin[data-pin="${pinId}"]`);
+                    if (pinEl) {
+                        pinEl.classList.toggle('active-1', pinValue === 1);
+                        pinEl.classList.toggle('active-0', pinValue === 0 && !!wire); // Only glow red if connected
+                    }
+                });
+
+                // Output pins: Glow based on the gate's own value
+                Object.keys(gate.outputs).forEach(pinId => {
+                    const pinEl = gateEl.querySelector(`.pin[data-pin="${pinId}"]`);
+                    if (pinEl) {
+                        const pinValue = gate.value;
+                        pinEl.classList.toggle('active-1', pinValue === 1);
+                        pinEl.classList.toggle('active-0', pinValue === 0);
+                    }
+                });
+            });
+        }
+
+        /**
+         * Draws all wires based on gate positions.
+         */
+        function redrawWires() {
+            Object.values(wires).forEach(wire => {
+                const wireEl = document.getElementById(wire.id);
+                if (!wireEl) return;
+
+                const fromGate = gates[wire.from.gateId];
+                const toGate = gates[wire.to.gateId];
+                if (!fromGate || !toGate) return;
+
+                const fromEl = document.getElementById(fromGate.id);
+                const toEl = document.getElementById(toGate.id);
+
+                const fromPinEl = fromEl.querySelector(`.pin[data-pin="${wire.from.pin}"]`);
+                const toPinEl = toEl.querySelector(`.pin[data-pin="${wire.to.pin}"]`);
+                if (!fromPinEl || !toPinEl) return;
+
+                const fromRect = fromPinEl.getBoundingClientRect();
+                const toRect = toPinEl.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+
+                const x1 = fromRect.left + fromRect.width / 2 - canvasRect.left;
+                const y1 = fromRect.top + fromRect.height / 2 - canvasRect.top;
+                const x2 = toRect.left + toRect.width / 2 - canvasRect.left;
+                const y2 = toRect.top + toRect.height / 2 - canvasRect.top;
+
+                // MID POINT (right-angled routing)
+                const midX = (x1 + x2) / 2;
+
+                const points = `${x1},${y1} ${midX},${y1} ${midX},${y2} ${x2},${y2}`;
+                wireEl.setAttribute("points", points);
+            });
+        }
+
+        // --- EVENT HANDLERS ---
+
+        // Library: Drag Gate to place
+        gateLibrary.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('lib-gate')) {
+                const type = e.target.dataset.type;
+                e.dataTransfer.setData('text/plain', type);
+                e.dataTransfer.effectAllowed = 'copy';
+            }
+        });
+
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Allow drop
+            e.dataTransfer.dropEffect = 'copy';
+        });
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('text/plain');
+            if (!type) return;
+
+            const canvasRect = canvas.getBoundingClientRect();
+            // Adjust for gate size to center on cursor
+            const x = e.clientX - canvasRect.left - 40; // 40 = half width
+            const y = e.clientY - canvasRect.top - 25; // 25 = half height
+
+            createGate(type, x, y);
+        });
+
+
+        // Canvas: Dragging, Wiring, Selecting
+        canvas.addEventListener('mousedown', (e) => {
+            const target = e.target;
+
+            // P0: Toggle Input Source
+            if (target.classList.contains('input-source')) {
+                e.stopPropagation();
+                const gateId = target.id;
+                const gate = gates[gateId];
+                gate.value = gate.value === 0 ? 1 : 0;
+                simulate();
+                return;
+            }
+
+            // P1: Start Wiring
+            if (target.classList.contains('pin') && isWiring) {
+                e.stopPropagation();
+                const gateId = target.closest('.gate').id;
+                const pin = target.dataset.pin;
+
+                if (target.classList.contains('output') && !wiringStart) {
+                    // Start a new wire
+                    wiringStart = { gateId, pin };
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const pinRect = target.getBoundingClientRect();
+                    const x = pinRect.left + pinRect.width / 2 - canvasRect.left;
+                    const y = pinRect.top + pinRect.height / 2 - canvasRect.top;
+                    tempWire.setAttribute('x1', x);
+                    tempWire.setAttribute('y1', y);
+                    tempWire.setAttribute('x2', x);
+                    tempWire.setAttribute('y2', y);
+                    tempWire.style.display = 'block';
+                }
+                else if (target.classList.contains('input') && wiringStart) {
+                    // Finish a wire
+                    const from = wiringStart;
+                    const to = { gateId, pin };
+
+                    // Check for existing connection
+                    if (gates[to.gateId].inputs[to.pin]) {
+                        console.warn("Input pin is already connected.");
+                    } else {
+                        // Create wire
+                        const wireId = `wire-${wireCounter++}`;
+                        const newWireEl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+                        newWireEl.setAttribute("fill", "none");
+                        newWireEl.setAttribute("stroke-width", "3");
+                        newWireEl.classList.add("wire");
+                        newWireEl.id = wireId;
+                        newWireEl.className = 'wire';
+                        wireCanvas.appendChild(newWireEl);
+
+                        const wireData = { id: wireId, from, to, value: 0 };
+                        wires[wireId] = wireData;
+
+                        // Update gate models
+                        gates[from.gateId].outputs[from.pin].push(wireId);
+                        gates[to.gateId].inputs[to.pin] = wireId;
+
+                        redrawWires();
+                        simulate();
+                    }
+
+                    // Reset wiring state
+                    wiringStart = null;
+                    tempWire.style.display = 'none';
+                }
+                return;
+            }
+
+            // P2: Start Dragging
+            if (target.classList.contains('gate')) {
+                e.stopPropagation();
+                isDragging = true;
+                activeDrag = {
+                    id: target.id,
+                    offsetX: e.clientX - target.getBoundingClientRect().left,
+                    offsetY: e.clientY - target.getBoundingClientRect().top
+                };
+
+                // Set selection
+                if (selectedGate) document.getElementById(selectedGate)?.classList.remove('selected');
+                selectedGate = target.id;
+                target.classList.add('selected');
+            }
+        });
+
+        // Canvas: Mouse Move
+        canvas.addEventListener('mousemove', (e) => {
+            // P1: Dragging
+            if (isDragging && activeDrag) {
+                const canvasRect = canvas.getBoundingClientRect();
+                let x = e.clientX - canvasRect.left - activeDrag.offsetX;
+                let y = e.clientY - canvasRect.top - activeDrag.offsetY;
+
+                // Clamp to canvas bounds
+                x = Math.max(0, Math.min(x, canvasRect.width - 80)); // 80 = gate width
+                y = Math.max(0, Math.min(y, canvasRect.height - 50)); // 50 = gate height
+
+                const gateEl = document.getElementById(activeDrag.id);
+                gateEl.style.left = `${x}px`;
+                gateEl.style.top = `${y}px`;
+                gates[activeDrag.id].x = x;
+                gates[activeDrag.id].y = y;
+
+                redrawWires();
+            }
+
+            // P2: Wiring (drawing temp wire)
+            if (isWiring && wiringStart) {
+                const canvasRect = canvas.getBoundingClientRect();
+                const x = e.clientX - canvasRect.left;
+                const y = e.clientY - canvasRect.top;
+                tempWire.setAttribute('x2', x);
+                tempWire.setAttribute('y2', y);
+            }
+        });
+
+        // Canvas: Mouse Up
+        canvas.addEventListener('mouseup', (e) => {
+            isDragging = false;
+            activeDrag = null;
+
+            // If we click off, cancel wiring
+            if (isWiring && wiringStart && !e.target.classList.contains('pin')) {
+                wiringStart = null;
+                tempWire.style.display = 'none';
+            }
+
+            // Deselect gate
+            if (selectedGate && !e.target.classList.contains('gate')) {
+                document.getElementById(selectedGate)?.classList.remove('selected');
+                selectedGate = null;
+            }
+        });
+
+        // Toolbar: Wire Mode
+        btnWireMode.addEventListener('click', () => {
+            isWiring = !isWiring;
+            btnWireMode.classList.toggle('active', isWiring);
+            canvas.style.cursor = isWiring ? 'crosshair' : 'default';
+            if (!isWiring) { // Cancel pending wire
+                wiringStart = null;
+                tempWire.style.display = 'none';
+            }
+        });
+
+        // Toolbar: Clear
+        btnClear.addEventListener('click', () => {
+            // Use a custom modal, not confirm()
+            if (window.confirm('Are you sure you want to clear the canvas? This cannot be undone.')) {
+                gates = {};
+                wires = {};
+                gateCounter = 0;
+                wireCounter = 0;
+                // Clear all children except the SVG canvas and its defs
+                while (canvas.lastChild && canvas.lastChild.id !== 'wire-canvas') {
+                    canvas.removeChild(canvas.lastChild);
+                }
+                // Clear wires from SVG
+                wireCanvas.innerHTML = `
+                        <line id="temp-wire" class="wire-temp" x1="0" y1="0" x2="0" y2="0" display="none"/>
+                    `;
+                // Re-assign tempWire
+                tempWire = document.getElementById('temp-wire');
+            }
+        });
+
+        // Toolbar: Export/Save
+        btnExport.addEventListener('click', () => {
+            showModal('export-modal');
+        });
+
+        document.getElementById('btn-export-png').addEventListener('click', async () => {
+            hideModal('export-modal');
+            try {
+                // Temporarily remove selection from the active gate
+                if (selectedGate) {
+                    document.getElementById(selectedGate).classList.remove('selected');
+                }
+
+                const canvasEl = document.getElementById('main-canvas');
+                const imgCanvas = await html2canvas(canvasEl, {
+                    backgroundColor: '#111827' // Set background color
+                });
+
+                // Restore selection if needed
+                if (selectedGate) {
+                    document.getElementById(selectedGate).classList.add('selected');
+                }
+
+                const link = document.createElement("a");
+                link.download = "circuit-design.png";
+                link.href = imgCanvas.toDataURL("image/png");
+                link.click();
+            } catch (err) {
+                console.error("Error exporting to PNG:", err);
+                alert("Error: Could not export to PNG.");
+            }
+        });
+
+        document.getElementById('btn-export-pdf').addEventListener('click', async () => {
+            hideModal('export-modal');
+            try {
+                // Temporarily remove selection from the active gate
+                if (selectedGate) {
+                    document.getElementById(selectedGate).classList.remove('selected');
+                }
+
+                const canvasEl = document.getElementById('main-canvas');
+                const imgCanvas = await html2canvas(canvasEl, {
+                    backgroundColor: '#111827'
+                });
+
+                // Restore selection if needed
+                if (selectedGate) {
+                    document.getElementById(selectedGate).classList.add('selected');
+                }
+
+                const { jsPDF } = window.jspdf;
+                const imgData = imgCanvas.toDataURL('image/png');
+                const imgProps = {
+                    width: imgCanvas.width,
+                    height: imgCanvas.height
+                };
+
+                // Determine orientation based on aspect ratio
+                const orientation = imgProps.width >= imgProps.height ? 'l' : 'p';
+                const pdf = new jsPDF(orientation, 'px', [imgProps.width, imgProps.height]);
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save("circuit-design.pdf");
+
+            } catch (err) {
+                console.error("Error exporting to PDF:", err);
+                alert("Error: Could not export to PDF.");
+            }
+        });
+
+        document.getElementById('btn-export-cancel').addEventListener('click', () => {
+            hideModal('export-modal');
+        });
+
+        document.getElementById('btn-save').addEventListener('click', () => {
+            // Placeholder: Use a modal, not alert()
+            alert('Save feature (e.g., to localStorage) would be implemented here.');
+        });
+
+    });
+</script>
+</body>
+</html>
